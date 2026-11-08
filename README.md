@@ -48,4 +48,4 @@ ShipPulse gives logistics teams one operational view of their shipments, vehicle
 - Automated exception detection for delays, GPS inactivity, route deviation, missed stops, and inactive vehicles.
 - In-app notifications, realtime delivery, and database-derived shipment, driver, and vehicle analytics.
 
-Run `npm run dev` to start the API, frontend, and notification worker together. PostGIS is required for geospatial detection, and the database migrations must be applied before runtime verification. See the [API documentation](docs/api.md), [database setup](docs/database.md), and [project progress](docs/project-progress.md) for implementation details.
+Run `npm run dev` to start the API, frontend, and notification worker together. PostGIS is required for geospatial detection, and the database migrations must be applied before runtime verification. See the [API documentation](docs/api.md), [database setup](docs/database.md) for implementation details.
