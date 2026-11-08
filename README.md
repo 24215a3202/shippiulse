@@ -36,8 +36,16 @@ npm run db:migrate
 
 See [architecture](docs/architecture.md), [database setup](docs/database.md), [security](docs/security.md), and the [production deployment guide](docs/deployment.md).
 
-## Current scope
+## What ShipPulse covers
 
-Phase 1 provides the JavaScript workspaces, React/Vite shell, Express API, validated configuration, PostgreSQL/Drizzle schema and migration, Redis connection, and dependency-aware health endpoint. Phase 2 adds organization registration, login, rotating sessions, CSRF checks, password reset, tenant-scoped identity checks, and role-aware middleware. Phase 3 adds team accounts, driver profiles, fleet records, and driver-to-vehicle assignment. Phase 4 adds shipment creation, search, pagination, details, stops, dispatch assignment, a constrained status workflow, and immutable event history. Phase 5 adds authenticated GPS updates, de-duplication, stale and out-of-order handling, location history and latest positions, plus a development-only simulator marked as simulated data. Phase 6 adds authenticated Socket.IO subscriptions and a live MapLibre tracking view. Phase 7 adds PostGIS-backed circle and polygon geofences, entry and exit events, ordered route versions, stop arrival and departure tracking, and planned and device-recorded distance. Phase 8 adds scheduled delay, GPS inactivity, route deviation, missed stop, and inactive vehicle checks with an operator exception queue. Phases 7 and 8 require PostGIS and their database migrations before runtime verification. See [API documentation](docs/api.md), [database setup](docs/database.md), and [project progress](docs/project-progress.md).
+ShipPulse gives logistics teams one operational view of their shipments, vehicles, drivers, and delivery exceptions. The platform combines:
 
-Phase 9 adds BullMQ-backed in-app notifications, realtime notification delivery, and database-derived shipment, driver, and vehicle analytics. Run `npm run dev` to start the API, frontend, and notification worker together. Phases 7 through 9 depend on the ordered database migrations; geospatial detection requires PostGIS.
+- Organization-aware authentication with rotating sessions, CSRF protection, password reset flows, and role-based access.
+- Team and fleet administration, including driver profiles, vehicles, and driver-to-vehicle assignments.
+- Shipment workflows with stops, dispatch assignment, pagination, constrained status transitions, and immutable event history.
+- Live GPS tracking with authenticated updates, stale-location handling, location history, and realtime MapLibre visualization.
+- PostGIS-powered geofences, route versions, stop arrival and departure tracking, and route-distance comparisons.
+- Automated exception detection for delays, GPS inactivity, route deviation, missed stops, and inactive vehicles.
+- In-app notifications, realtime delivery, and database-derived shipment, driver, and vehicle analytics.
+
+Run `npm run dev` to start the API, frontend, and notification worker together. PostGIS is required for geospatial detection, and the database migrations must be applied before runtime verification. See the [API documentation](docs/api.md), [database setup](docs/database.md), and [project progress](docs/project-progress.md) for implementation details.
