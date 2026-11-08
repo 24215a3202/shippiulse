@@ -1,17 +1,24 @@
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import request from 'supertest';
 import { randomUUID } from 'node:crypto';
 import { app } from '../src/app.js';
-import { closeDatabase, db } from '../src/db/client.js';
+import { closeDatabase, db, pool } from '../src/db/client.js';
 import { organizations } from '../src/db/schema.js';
 import { inArray } from 'drizzle-orm';
 import { eq } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { users } from '../src/db/schema.js';
 
+vi.mock('../src/modules/notifications/notification-queue.js', () => ({
+  enqueueRealtimeNotification: async () => {},
+  enqueueUserNotification: async () => {},
+}));
+
 const testId = randomUUID().replaceAll('-', '').slice(0, 12);
 const slugA = `auth-test-${testId}-a`;
 const slugB = `auth-test-${testId}-b`;
+const slugC = `auth-test-${testId}-c`;
+const slugD = `auth-test-${testId}-d`;
 const email = `ops-${testId}@example.test`;
 
 function csrfFrom(response) {
@@ -30,8 +37,10 @@ describe('authentication and tenant isolation', () => {
 
   afterAll(async () => {
     try {
-      await db.delete(organizations).where(inArray(organizations.slug, [slugA, slugB]));
+      await pool.query('ALTER TABLE shipment_events DISABLE TRIGGER shipment_events_immutable');
+      await db.delete(organizations).where(inArray(organizations.slug, [slugA, slugB, slugC, slugD]));
     } finally {
+      await pool.query('ALTER TABLE shipment_events ENABLE TRIGGER shipment_events_immutable').catch(() => {});
       await closeDatabase();
     }
   });
@@ -138,5 +147,89 @@ describe('authentication and tenant isolation', () => {
       password: nextPassword,
     }).expect(200);
     expect(newLogin.body.user.email).toBe(email);
+  }, 20_000);
+
+  test('keeps shipment operations tenant-scoped and enforces the dispatch workflow', async () => {
+    const accountA = request.agent(app);
+    const lifecycleEmail = `lifecycle-${testId}@example.test`;
+    const lifecyclePassword = 'Maple-River-Operations-2026';
+    const registration = await accountA.post('/api/auth/register').send({
+      organizationName: 'Northstar Freight',
+      organizationSlug: slugC,
+      name: 'Avery Dispatcher',
+      email: lifecycleEmail,
+      password: lifecyclePassword,
+    }).expect(201);
+    const csrf = csrfFrom(registration);
+
+    const driverResponse = await accountA.post('/api/team/drivers').set('X-CSRF-Token', csrf).send({
+      name: 'Casey Driver',
+      email: `driver-${testId}@example.test`,
+      password: 'Driver-Account-Password-2026',
+      phone: '+1-555-0100',
+      licenseNumber: `LIC-${testId}`,
+    }).expect(201);
+
+    const vehicleResponse = await accountA.post('/api/fleet/vehicles').set('X-CSRF-Token', csrf).send({
+      registrationNumber: `SP-${testId}`,
+      make: 'Freightliner',
+      model: 'M2',
+      vehicleType: 'TRUCK',
+      capacityKg: 12000,
+    }).expect(201);
+
+    await accountA.patch(`/api/fleet/vehicles/${vehicleResponse.body.vehicle.id}`)
+      .set('X-CSRF-Token', csrf)
+      .send({ driverId: driverResponse.body.driver.id })
+      .expect(200);
+
+    const created = await accountA.post('/api/shipments').set('X-CSRF-Token', csrf).send({
+      referenceNumber: `REF-${testId}`,
+      description: 'Warehouse equipment delivery',
+      recipientName: 'Jordan Recipient',
+      recipientPhone: '+1-555-0199',
+      pickupAddress: '100 Warehouse Road, Austin, TX',
+      deliveryAddress: '200 Market Street, Austin, TX',
+      stops: [{ name: 'North depot', address: '150 Depot Lane, Austin, TX' }],
+    }).expect(201);
+    const shipmentId = created.body.shipment.id;
+
+    await request(app).get(`/api/shipments/${shipmentId}`).set('Cookie', cookiesFrom(registration)).expect(200);
+    await request(app).post(`/api/shipments/${shipmentId}/status`)
+      .set('Cookie', cookiesFrom(registration))
+      .set('X-CSRF-Token', csrf)
+      .send({ status: 'DELIVERED' })
+      .expect(409);
+
+    const assignment = await accountA.patch(`/api/shipments/${shipmentId}/assignment`)
+      .set('X-CSRF-Token', csrf)
+      .send({ driverId: driverResponse.body.driver.id, vehicleId: vehicleResponse.body.vehicle.id })
+      .expect(200);
+    expect(assignment.body.shipment.status).toBe('ASSIGNED');
+
+    const pickup = await accountA.post(`/api/shipments/${shipmentId}/status`)
+      .set('X-CSRF-Token', csrf)
+      .send({ status: 'PICKED_UP' })
+      .expect(200);
+    expect(pickup.body.shipment.status).toBe('PICKED_UP');
+
+    await accountA.patch(`/api/shipments/${shipmentId}`).set('X-CSRF-Token', csrf)
+      .send({ description: 'Changed after pickup' }).expect(409);
+
+    const details = await accountA.get(`/api/shipments/${shipmentId}`).expect(200);
+    expect(details.body.shipment.stops).toHaveLength(1);
+    expect(details.body.shipment.events.map(({ toStatus }) => toStatus).filter(Boolean)).toEqual(
+      expect.arrayContaining(['ASSIGNED', 'PICKED_UP']),
+    );
+
+    const accountB = request.agent(app);
+    await accountB.post('/api/auth/register').send({
+      organizationName: 'Southstar Freight',
+      organizationSlug: slugD,
+      name: 'Blake Dispatcher',
+      email: `other-${testId}@example.test`,
+      password: lifecyclePassword,
+    }).expect(201);
+    await accountB.get(`/api/shipments/${shipmentId}`).expect(404);
   });
 });

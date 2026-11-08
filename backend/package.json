@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.js",
+    "worker": "node src/workers/notification-worker.js",
     "start": "node src/index.js",
-    "check": "node --check src/index.js && node --check src/app.js && node --check src/config/env.js && node --check src/db/client.js && node --check src/db/migrate.js && node --check src/modules/auth/tokens.js && node --check src/modules/auth/cookies.js && node --check src/modules/auth/validation.js && node --check src/modules/auth/auth-errors.js && node --check src/modules/auth/auth-middleware.js && node --check src/modules/auth/auth-service.js && node --check src/modules/auth/auth.routes.js && node --check src/modules/auth/password-reset-email.js && node --check src/modules/organizations/organizations.routes.js",
+    "check": "node --check src/index.js && node --check src/app.js && node --check src/config/env.js && node --check src/db/client.js && node --check src/db/redis.js && node --check src/db/migrate.js && node --check src/db/schema.js && node --check src/realtime/socket-server.js && node --check src/modules/auth/tokens.js && node --check src/modules/auth/cookies.js && node --check src/modules/auth/validation.js && node --check src/modules/auth/auth-errors.js && node --check src/modules/auth/auth-middleware.js && node --check src/modules/auth/auth-service.js && node --check src/modules/auth/auth.routes.js && node --check src/modules/auth/password-reset-email.js && node --check src/modules/organizations/organizations.routes.js && node --check src/modules/team/team.routes.js && node --check src/modules/fleet/fleet.routes.js && node --check src/modules/shipments/shipments.routes.js && node --check src/modules/tracking/tracking.routes.js && node --check src/modules/geospatial/geospatial-service.js && node --check src/modules/geospatial/geospatial.routes.js && node --check src/modules/exceptions/exception-service.js && node --check src/modules/exceptions/exceptions.routes.js && node --check src/modules/notifications/notification-constants.js && node --check src/modules/notifications/notification-queue.js && node --check src/modules/notifications/notification-realtime.js && node --check src/modules/notifications/notifications.routes.js && node --check src/modules/analytics/analytics.routes.js && node --check src/workers/notification-worker.js",
     "db:migrate": "node src/db/migrate.js",
     "test": "vitest run"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.7.2",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "drizzle-orm": "^0.45.4",
@@ -23,6 +25,7 @@
     "pg": "^8.16.3",
     "pino": "^9.9.0",
     "pino-http": "^10.5.0",
+    "socket.io": "^4.8.4",
     "zod": "^4.1.5"
   },
   "devDependencies": {

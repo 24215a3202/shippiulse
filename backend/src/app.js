@@ -9,6 +9,14 @@ import { checkRedis } from './db/redis.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { organizationsRouter } from './modules/organizations/organizations.routes.js';
+import { teamRouter } from './modules/team/team.routes.js';
+import { fleetRouter } from './modules/fleet/fleet.routes.js';
+import { shipmentsRouter } from './modules/shipments/shipments.routes.js';
+import { trackingRouter } from './modules/tracking/tracking.routes.js';
+import { geospatialRouter } from './modules/geospatial/geospatial.routes.js';
+import { exceptionsRouter } from './modules/exceptions/exceptions.routes.js';
+import { notificationsRouter } from './modules/notifications/notifications.routes.js';
+import { analyticsRouter } from './modules/analytics/analytics.routes.js';
 
 export const app = express();
 
@@ -45,6 +53,14 @@ app.get('/health', async (_request, response) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/organizations', organizationsRouter);
+app.use('/api/team', teamRouter);
+app.use('/api/fleet', fleetRouter);
+app.use('/api/shipments', shipmentsRouter);
+app.use('/api/tracking', trackingRouter);
+app.use('/api', geospatialRouter);
+app.use('/api/exceptions', exceptionsRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/analytics', analyticsRouter);
 
 app.use(notFound);
 app.use(errorHandler);

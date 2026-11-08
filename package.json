@@ -8,9 +8,10 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently -k -n api,web -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev": "concurrently -k -n api,web,worker -c blue,green,yellow \"npm:dev:backend\" \"npm:dev:frontend\" \"npm:dev:worker\"",
     "dev:backend": "npm --workspace backend run dev",
     "dev:frontend": "npm --workspace frontend run dev",
+    "dev:worker": "npm --workspace backend run worker",
     "build": "npm --workspace frontend run build",
     "test": "npm --workspace backend run test",
     "db:migrate": "npm --workspace backend run db:migrate",
